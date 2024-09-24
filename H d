@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Dussehra Calendar</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+        }
+        #dussehraPage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #ff8800;
+            color: #fff;
+            font-size: 50px;
+            font-weight: bold;
+        }
+        #calendarPage {
+            display: none;
+            padding: 20px;
+            background-color: #fff;
+        }
+        #calendar {
+            width: 100%;
+            max-width: 900px;
+            margin: 20px auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        th {
+            background-color: #ff8800;
+            color: white;
+        }
+        .day {
+            height: 120px;
+            vertical-align: top;
+            position: relative;
+        }
+        .day:hover {
+            background-color: #f0f0f0;
+            cursor: pointer;
+        }
+        .btn {
+            margin: 5px 0;
+            padding: 5px 10px;
+            background-color: #ff8800;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn:hover {
+            background-color: #ff5500;
+        }
+        #eventPlannerForm {
+            display: none;
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+            z-index: 100;
+            width: 50%;
+        }
+        #eventPlannerForm textarea {
+            width: 100%;
+            height: 100px;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+        .plannerItem {
+            background-color: #ffebcc;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 5px solid #ff8800;
+            text-align: left;
+            font-size: 12px;
+            color: #333;
+        }
+        .plannerItem h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #333;
+        }
+        .plannerItem p {
+            margin: 0;
+            font-size: 12px;
+            color: #555;
+        }
+        .plannerItem button {
+            margin-top: 5px;
+            padding: 2px 5px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .nav {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .nav button {
+            padding: 10px;
+            margin: 0 10px;
+            background-color: #ff8800;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .plannerBox {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="dussehraPage">Happy Dussehra</div>
+
+<div id="calendarPage">
+    <div class="nav">
+        <button onclick="prevMonth()">Previous</button>
+        <span id="currentMonth"></span>
+        <button onclick="nextMonth()">Next</button>
+    </div>
+    <div id="calendar"></div>
+    
+    <div class="plannerBox" id="plannerBox"></div>
+    
+    <div id="eventPlannerForm">
+        <h3 id="formTitle">Add Planner/Event</h3>
+        <textarea id="eventDescription" placeholder="Write your planner or event..."></textarea><br><br>
+        <button class="btn" onclick="saveEvent()">Save</button>
+        <button class="btn" onclick="closeForm()">Cancel</button>
+    </div>
+    <div class="overlay" onclick="closeForm()"></div>
+</div>
+
+<script>
+    // First Page Transition Logic
+    setTimeout(function() {
+        document.getElementById('dussehraPage').style.display = 'none';
+        document.getElementById('calendarPage').style.display = 'block';
+        generateCalendar(new Date().getMonth(), new Date().getFullYear());
+    }, 3000);
+
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+    let selectedDate;
+    let isPlanner = false;
+    let editingIndex = -1; // New variable to track the index being edited
+
+    function generateCalendar(month, year) {
+        currentMonth = month;
+        currentYear = year;
+        const calendar = document.getElementById('calendar');
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        document.getElementById('currentMonth').innerText = `${months[month]} ${year}`;
+        calendar.innerHTML = `<table><thead><tr>${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => `<th>${day}</th>`).join('')}</tr></thead><tbody></tbody></table>`;
+        const tbody = calendar.querySelector('tbody');
+        tbody.innerHTML = '';
+        let row = document.createElement('tr');
+        
+        // Create blank cells before the first day of the month
+        for (let i = 0; i < firstDay; i++) {
+            row.appendChild(document.createElement('td'));
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const td = document.createElement('td');
+            td.className = 'day';
+            td.innerHTML = `${day}<br><button class="btn" onclick="openForm(${day}, 'event')">Add Event</button><button class="btn" onclick="openForm(${day}, 'planner')">Add Planner</button>`;
+            row.appendChild(td);
+            if ((day + firstDay) % 7 === 0) {
+                tbody.appendChild(row);
+                row = document.createElement('tr');
+            }
+        }
+        tbody.appendChild(row);
+        loadPlanners();  // Ensure planners are reloaded after generating the calendar
+    }
+
+    function openForm(day, type, index = -1) {
+        selectedDate = `${currentYear}-${currentMonth}-${day}`;
+        isPlanner = (type === 'planner');
+        editingIndex = index;  // Update the editing index
+        document.getElementById('formTitle').textContent = isPlanner ? 'Add Planner' : 'Add Event';
+        document.getElementById('eventDescription').value = index >= 0 ? getEventAtIndex(index).content : '';  // Load existing content for editing
+        document.getElementById('eventPlannerForm').style.display = 'block';
+        document.querySelector('.overlay').style.display = 'block';
+    }
+
+    function closeForm() {
+        document.getElementById('eventPlannerForm').style.display = 'none';
+        document.querySelector('.overlay').style.display = 'none';
+        editingIndex = -1; // Reset the editing index
+    }
+
+    function saveEvent() {
+        const description = document.getElementById('eventDescription').value;
+        if (description.trim()) {
+            const storedEvents = JSON.parse(localStorage.getItem(selectedDate) || '[]');
+            if (editingIndex >= 0) {
+                storedEvents[editingIndex].content = description; // Edit existing entry
+            } else {
+                storedEvents.push({ type: isPlanner ? 'Planner' : 'Event', content: description }); // Add new entry
+            }
+            localStorage.setItem(selectedDate, JSON.stringify(storedEvents));
+            closeForm();
+            generateCalendar(currentMonth, currentYear);  // Reload the calendar after saving an event
+        } else {
+            alert('Please write something.');
+        }
+    }
+
+    function deleteEvent(day, index) {
+        const dateKey = `${currentYear}-${currentMonth}-${day}`;
+        const storedEvents = JSON.parse(localStorage.getItem(dateKey) || '[]');
+        storedEvents.splice(index, 1);  // Remove the selected event
+        localStorage.setItem(dateKey, JSON.stringify(storedEvents));
+        generateCalendar(currentMonth, currentYear);  // Refresh the calendar
+    }
+
+    function loadPlanners() {
+        const plannerBox = document.getElementById('plannerBox');
+        plannerBox.innerHTML = '';
+        for (let day = 1; day <= new Date(currentYear, currentMonth + 1, 0).getDate(); day++) {
+            const dateKey = `${currentYear}-${currentMonth}-${day}`;
+            const storedEvents = JSON.parse(localStorage.getItem(dateKey) || '[]');
+            if (storedEvents.length > 0) {
+                const dayEvents = document.createElement('div');
+                dayEvents.innerHTML = `<h4>Plans for ${day}/${currentMonth + 1}/${currentYear}:</h4>`;
+                storedEvents.forEach((event, index) => {
+                    const plannerItem = document.createElement('div');
+                    plannerItem.className = 'plannerItem';
+                    plannerItem.innerHTML = `
+                        <h4>${event.type}</h4>
+                        <p>${event.content}</p>
+                        <button onclick="openForm(${day}, '${event.type.toLowerCase()}', ${index})">Edit</button>
+                        <button onclick="deleteEvent(${day}, ${index})">Delete</button>`;
+                    dayEvents.appendChild(plannerItem);
+                });
+                plannerBox.appendChild(dayEvents);
+            }
+        }
+    }
+
+    function prevMonth() {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        generateCalendar(currentMonth, currentYear);
+    }
+
+    function nextMonth() {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        generateCalendar(currentMonth, currentYear);
+    }
+
+    function getEventAtIndex(index) {
+        const storedEvents = JSON.parse(localStorage.getItem(selectedDate) || '[]');
+        return storedEvents[index];
+    }
+</script>
+
+</body>
+</html>
